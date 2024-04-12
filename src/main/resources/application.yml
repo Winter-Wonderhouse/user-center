@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: demo
+
+  datasource:
+    url: jdbc:mysql://<HOST>:<POST>/<DATABASE>?useUnicode=true&characterEncoding=utf8&connectTimeout=3000&socketTimeout=30000
+    username: <USERNAME>
+    password: <PASSWORD>
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+server:
+  port: 8888
+  servlet:
+    context-path: /api
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: isDelete
+      logic-delete-value: 1
+      logic-not-delete-value: 0

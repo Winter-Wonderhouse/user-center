@@ -1,0 +1,11 @@
+CREATE DATABASE IF NOT EXISTS `demo`;
+
+USE `demo`;
+
+CREATE TABLE IF EXISTS `user`(
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `username` VARCHAR(100) NOT NULL,
+    `email` VARCHAR(100) NULL,
+    `password` VARCHAR(100) NOT NULL,
+    `role` TINEINT(1) NOT NULL DEFAULT 'U',
+);
