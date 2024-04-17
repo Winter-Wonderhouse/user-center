@@ -1,7 +1,6 @@
 package com.example.demo.exception;
 
 import com.example.demo.common.ErrorCode;
-import lombok.Getter;
 
 /**
  * 异常处理

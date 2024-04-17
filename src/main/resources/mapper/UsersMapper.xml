@@ -5,20 +5,21 @@
 <mapper namespace="com.example.demo.mapper.UsersMapper">
 
     <resultMap id="BaseResultMap" type="com.example.demo.model.domain.User">
-            <id property="id" column="id" jdbcType="BIGINT"/>
-            <result property="username" column="username" jdbcType="VARCHAR"/>
-            <result property="password" column="password" jdbcType="VARCHAR"/>
-            <result property="role" column="role" jdbcType="TINYINT"/>
-            <result property="avatar" column="avatar" jdbcType="VARCHAR"/>
-            <result property="email" column="email" jdbcType="VARCHAR"/>
-            <result property="phone" column="phone" jdbcType="VARCHAR"/>
-            <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
-            <result property="updatedTime" column="updated_time" jdbcType="TIMESTAMP"/>
-            <result property="isDelete" column="is_delete" jdbcType="INTEGER"/>
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="username" column="username" jdbcType="VARCHAR"/>
+        <result property="password" column="password" jdbcType="VARCHAR"/>
+        <result property="role" column="role" jdbcType="TINYINT"/>
+        <result property="avatar" column="avatar" jdbcType="VARCHAR"/>
+        <result property="email" column="email" jdbcType="VARCHAR"/>
+        <result property="phone" column="phone" jdbcType="VARCHAR"/>
+        <result property="createdTime" column="created_time" jdbcType="TIMESTAMP"/>
+        <result property="updatedTime" column="updated_time" jdbcType="TIMESTAMP"/>
+        <result property="isDelete" column="is_delete" jdbcType="INTEGER"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,username,password,
+        id
+        ,username,password,
         role,avatar,email,
         phone,created_time,updated_time,
         is_delete

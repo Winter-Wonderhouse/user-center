@@ -9,10 +9,12 @@ import com.example.demo.model.request.UserRegisterRequest;
 import com.example.demo.model.request.UserSearchRequest;
 import com.example.demo.model.request.UserUpdateRequest;
 import com.example.demo.service.UserService;
+import com.example.demo.utils.AuthUtils;
 import com.example.demo.utils.ResultUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.Getter;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,11 +22,13 @@ import java.util.List;
 /**
  * UserController 路由
  *
- * @author wenruohan
+ * @author KingYen.
  */
 @RestController
 @RequestMapping("/user")
+@Tag(name = "user")
 public class UserController {
+
     @Resource
     private UserService userService;
 
@@ -33,25 +37,12 @@ public class UserController {
      *
      * @param userRegisterRequest
      * @return BaseResponse<UserDTO>
-     * @author wenruohan
+     * @author KingYen.
      */
+    @Operation(summary = "用户注册")
     @PostMapping("/register")
     public BaseResponse<UserDTO> register(@RequestBody UserRegisterRequest userRegisterRequest) {
-        if (userRegisterRequest.getUsername().isEmpty() || userRegisterRequest.getPassword().isEmpty() || userRegisterRequest.getCheckPassword().isEmpty()) {
-            throw new BusinessException(ErrorCode.NULL_ERROR);
-        }
-
-        if (userRegisterRequest.getUsername().length() > 20) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "username is too long");
-        }
-
-        if (userRegisterRequest.getPassword().length() < 8) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "password must be at least 8 characters");
-        }
-
-        if (!userRegisterRequest.getPassword().equals(userRegisterRequest.getCheckPassword())) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "passwords are not the same");
-        }
+        userRegisterRequest.check();
 
         UserDTO result = userService.register(userRegisterRequest);
 
@@ -64,23 +55,17 @@ public class UserController {
      * @param userLoginRequest
      * @param request
      * @return BaseResponse<UserDTO>
-     * @author wenruohan
+     * @author KingYen.
      */
+    @Operation(summary = "用户登陆")
     @PostMapping("/login")
     public BaseResponse<UserDTO> login(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
-        if (userLoginRequest.getUsername().isEmpty() || userLoginRequest.getPassword().isEmpty()) {
-            throw new BusinessException(ErrorCode.NULL_ERROR);
-        }
+        userLoginRequest.check();
 
-        if (userLoginRequest.getUsername().length() > 20) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "username is too long");
-        }
+        UserDTO result = userService.login(userLoginRequest);
 
-        if (userLoginRequest.getPassword().length() < 8) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "password must be at least 8 characters");
-        }
-
-        UserDTO result = userService.login(userLoginRequest, request);
+        // Set session to mark the user as logged in.
+        request.getSession().setAttribute("user", result);
 
         return ResultUtils.success(result);
     }
@@ -90,18 +75,19 @@ public class UserController {
      *
      * @param request
      * @return BaseResponse<UserDTO>
-     * @author wenruohan
+     * @author KingYen.
      */
+    @Operation(summary = "获取用户信息")
     @GetMapping("/current")
     public BaseResponse<UserDTO> currentUser(HttpServletRequest request) {
-        UserDTO result = userService.currentUser(request);
-        return ResultUtils.success(result);
+        return ResultUtils.success(AuthUtils.isLogin(request));
     }
 
+    @Operation(summary = "更新用户信息")
     @PostMapping("/update")
     public BaseResponse<UserDTO> update(@RequestBody UserUpdateRequest userUpdateRequest, HttpServletRequest request) {
-        UserDTO result = userService.update(userUpdateRequest, request);
-        return ResultUtils.success(result);
+        UserDTO userInfo = AuthUtils.isLogin(request);
+        return ResultUtils.success(userService.update(userUpdateRequest, userInfo));
     }
 
     /**
@@ -109,13 +95,12 @@ public class UserController {
      *
      * @param request
      * @return BaseResponse<String>
-     * @author wenruohan
+     * @author KingYen.
      */
+    @Operation(summary = "用户登出")
     @GetMapping("/logout")
     public BaseResponse<String> logout(HttpServletRequest request) {
-        if (!userService.logout(request)) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "logout failed");
-        }
+        request.removeAttribute("user");
 
         return ResultUtils.success("logout success");
     }
@@ -126,11 +111,38 @@ public class UserController {
      * @param userSearchRequest
      * @param request
      * @return BaseResponse<List<UserDTO>>
+     * @author KingYen.
      */
+    @Operation(summary = "搜索用户")
     @PostMapping("/search")
     public BaseResponse<List<UserDTO>> searchUserList(@RequestBody UserSearchRequest userSearchRequest, HttpServletRequest request) {
-        List<UserDTO> result = userService.getUserList(userSearchRequest, request);
-        return ResultUtils.success(result);
+        // Check the user as logging in and is admin.
+        boolean result = AuthUtils.isRole(request);
+
+        if (!result) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+
+        List<UserDTO> userDTOList = userService.getUserList(userSearchRequest);
+        return ResultUtils.success(userDTOList);
+    }
+
+    /**
+     * 删除用户
+     * @param id
+     * @param request
+     * @return BaseResponse<Boolean>
+     * @author KingYen.
+     */
+    @Operation(summary = "删除用户")
+    @GetMapping("/delete/{id}")
+    public BaseResponse<Boolean> deleteUser(@PathVariable Long id, HttpServletRequest request) {
+        // Check the user as logging in and is admin.
+        if (!AuthUtils.isRole(request)) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+
+        return ResultUtils.success(userService.deleteUser(id));
     }
 }
 

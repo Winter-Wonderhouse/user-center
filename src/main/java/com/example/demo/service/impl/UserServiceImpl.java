@@ -14,7 +14,6 @@ import com.example.demo.model.request.UserSearchRequest;
 import com.example.demo.model.request.UserUpdateRequest;
 import com.example.demo.service.UserService;
 import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
@@ -39,6 +38,7 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
      *
      * @param userRegisterRequest
      * @return userDTO
+     * @author KingYen.
      */
     @Override
     public UserDTO register(UserRegisterRequest userRegisterRequest) {
@@ -76,11 +76,11 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
      * 用户登陆逻辑
      *
      * @param userLoginRequest
-     * @param request
      * @return userDTO
+     * @author KingYen.
      */
     @Override
-    public UserDTO login(UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    public UserDTO login(UserLoginRequest userLoginRequest) {
         // User password encryption
         String encrypthonPassword = DigestUtils.md5DigestAsHex(userLoginRequest.getPassword().getBytes());
         // Whether the user is registered or not.
@@ -97,32 +97,6 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
         UserDTO userDTO = new UserDTO();
         userDTO.getUserDTO(user);
 
-        // Set session to mark the user as logged in.
-        request.getSession().setAttribute("user", userDTO);
-        return userDTO;
-    }
-
-    /**
-     * 获取用户基本信息
-     *
-     * @param request
-     * @return userDTO
-     */
-    @Override
-    public UserDTO currentUser(HttpServletRequest request) {
-        // Check the user as logged in by user session
-        Object sessionObj = request.getSession().getAttribute("user");
-        UserDTO user = (UserDTO) sessionObj;
-        if (user == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN);
-        }
-
-        // Get user safety info
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("id", user.getId());
-        User currentUser = getOne(queryWrapper);
-        UserDTO userDTO = new UserDTO();
-        userDTO.getUserDTO(currentUser);
         return userDTO;
     }
 
@@ -130,18 +104,12 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
      * 更新用户信息业务逻辑
      *
      * @param userUpdateRequest
-     * @param request
+     * @param userInfo
      * @return userDTO
+     * @author KingYen.
      */
     @Override
-    public UserDTO update(UserUpdateRequest userUpdateRequest, HttpServletRequest request) {
-        // Check the user as logging in and get user info.
-        Object sessionInfo = request.getSession().getAttribute("user");
-        UserDTO userInfo = (UserDTO) sessionInfo;
-        if (userInfo == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN);
-        }
-
+    public UserDTO update(UserUpdateRequest userUpdateRequest, UserDTO userInfo) {
         // Save or update the user info.
         User user = new User();
         user.setId(userInfo.getId());
@@ -160,31 +128,15 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
     }
 
     /**
-     * 用户登出逻辑
-     *
-     * @param request
-     * @return boolean
-     * @author KingYen.
-     */
-    @Override
-    public boolean logout(HttpServletRequest request) {
-        request.getSession().removeAttribute("user");
-        return true;
-    }
-
-    /**
      * 查询用户业务逻辑
      *
      * @param userSearchRequest
-     * @param request
      * @return List<UserDTO>
      * @author KingYen.
      */
     @Override
-    public List<UserDTO> getUserList(UserSearchRequest userSearchRequest, HttpServletRequest request) {
-        // Check the user as logging in and get user info.
-        Object sessionObj = request.getSession().getAttribute("user");
-        Page<User> userPage = getUserPage(userSearchRequest, (UserDTO) sessionObj);
+    public List<UserDTO> getUserList(UserSearchRequest userSearchRequest) {
+        Page<User> userPage = getUserPage(userSearchRequest);
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         // TODO if type and value is empty get all user list.
         if (userSearchRequest.getType().isEmpty() || userSearchRequest.getValue().isEmpty()) {
@@ -206,24 +158,19 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
         return userDTOList;
     }
 
+    @Override
+    public boolean deleteUser(Long id) {
+        return removeById(id);
+    }
+
     /**
      * 获取分页信息
      *
      * @param userSearchRequest
-     * @param sessionObj
      * @return Page<>(page, size)
      * @author KingYen.
      */
-    private static Page<User> getUserPage(UserSearchRequest userSearchRequest, UserDTO sessionObj) {
-        // TODO Split permission verification.
-        if (sessionObj == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN);
-        }
-
-        if (sessionObj.getRole() != 1) {
-            throw new BusinessException(ErrorCode.NO_AUTH);
-        }
-
+    private static Page<User> getUserPage(UserSearchRequest userSearchRequest) {
         int page = userSearchRequest.getPage();
         if (page < 1) {
             page = 1;

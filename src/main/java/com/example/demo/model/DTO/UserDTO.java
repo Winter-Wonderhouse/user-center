@@ -5,10 +5,15 @@ import lombok.Data;
 
 @Data
 public class UserDTO {
+
     private Long id;
+
     private String username;
+
     private Integer role;
+
     private String email;
+
     private String phone;
 
     public void getUserDTO(User user) {
