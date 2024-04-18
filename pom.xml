@@ -8,11 +8,11 @@
         <version>3.2.4</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.qitsoftwarestudio</groupId>
-    <artifactId>demo</artifactId>
+    <groupId>com.winter_wonder_house</groupId>
+    <artifactId>user_center</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>demo</name>
-    <description>demo</description>
+    <name>user center</name>
+    <description>user center</description>
     <properties>
         <java.version>17</java.version>
     </properties>
