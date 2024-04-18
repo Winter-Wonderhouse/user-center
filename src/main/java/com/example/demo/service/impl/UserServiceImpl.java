@@ -82,11 +82,11 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
     @Override
     public UserDTO login(UserLoginRequest userLoginRequest) {
         // User password encryption
-        String encrypthonPassword = DigestUtils.md5DigestAsHex(userLoginRequest.getPassword().getBytes());
+        String encryptionPassword = DigestUtils.md5DigestAsHex(userLoginRequest.getPassword().getBytes());
         // Whether the user is registered or not.
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("username", userLoginRequest.getUsername());
-        queryWrapper.eq("password", encrypthonPassword);
+        queryWrapper.eq("password", encryptionPassword);
         User user = getOne(queryWrapper);
         // User not registered, return the error
         if (user == null) {
@@ -138,13 +138,11 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
     public List<UserDTO> getUserList(UserSearchRequest userSearchRequest) {
         Page<User> userPage = getUserPage(userSearchRequest);
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        // TODO if type and value is empty get all user list.
-        if (userSearchRequest.getType().isEmpty() || userSearchRequest.getValue().isEmpty()) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        if (!userSearchRequest.getType().isEmpty() || !userSearchRequest.getValue().isEmpty()) {
+            // Search user info by Type and Value.
+            queryWrapper.like(userSearchRequest.getType(), userSearchRequest.getValue());
         }
 
-        // Seach user info by Type and Value.
-        queryWrapper.like(userSearchRequest.getType(), userSearchRequest.getValue());
         List<User> userList = usersMapper.selectPage(userPage, queryWrapper).getRecords();
 
         // return user safety user info.
