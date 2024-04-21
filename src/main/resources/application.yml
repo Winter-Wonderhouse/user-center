@@ -3,9 +3,9 @@ spring:
     name: demo
 
   datasource:
-    url: jdbc:mysql://<HOST>:<POST>/<DATABASE>?useUnicode=true&characterEncoding=utf8&connectTimeout=3000&socketTimeout=30000
-    username: <USERNAME>
-    password: <PASSWORD>
+    url: jdbc:mysql://localhost:3306/demo?useUnicode=true&characterEncoding=utf8&connectTimeout=3000&socketTimeout=30000
+    username: root
+    password: Wenrh240004
     driver-class-name: com.mysql.cj.jdbc.Driver
 
 server:
