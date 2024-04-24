@@ -17,3 +17,9 @@
 2. Modify the configuration file
     - Add yourself Mysql config
 2. Run the application
+
+
+## TODO
+- 上传用户头像
+  - minio
+- redis 接入
