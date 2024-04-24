@@ -1,8 +1,6 @@
 package com.winter_wonder_house.user_center.controller;
 
 import com.winter_wonder_house.user_center.common.BaseResponse;
-import com.winter_wonder_house.user_center.common.ErrorCode;
-import com.winter_wonder_house.user_center.exception.BusinessException;
 import com.winter_wonder_house.user_center.model.DTO.UserDTO;
 import com.winter_wonder_house.user_center.model.request.UserLoginRequest;
 import com.winter_wonder_house.user_center.model.request.UserRegisterRequest;
@@ -64,6 +62,9 @@ public class UserController {
 
         UserDTO result = userService.login(userLoginRequest);
 
+        UserSearchRequest userSearchRequest = new UserSearchRequest();
+        userService.getUserList(userSearchRequest, result.getId());
+
         // Set session to mark the user as logged in.
         request.getSession().setAttribute("user", result);
 
@@ -117,13 +118,9 @@ public class UserController {
     @PostMapping("/search")
     public BaseResponse<List<UserDTO>> searchUserList(@RequestBody UserSearchRequest userSearchRequest, HttpServletRequest request) {
         // Check the user as logging in and is admin.
-        boolean result = AuthUtils.isRole(request);
+        UserDTO userInfo = AuthUtils.isRole(request);
 
-        if (!result) {
-            throw new BusinessException(ErrorCode.NO_AUTH);
-        }
-
-        List<UserDTO> userDTOList = userService.getUserList(userSearchRequest);
+        List<UserDTO> userDTOList = userService.getUserList(userSearchRequest, userInfo.getId());
         return ResultUtils.success(userDTOList);
     }
 
@@ -138,11 +135,9 @@ public class UserController {
     @GetMapping("/delete/{id}")
     public BaseResponse<Boolean> deleteUser(@PathVariable Long id, HttpServletRequest request) {
         // Check the user as logging in and is admin.
-        if (!AuthUtils.isRole(request)) {
-            throw new BusinessException(ErrorCode.NO_AUTH);
-        }
+        AuthUtils.isRole(request);
 
-        return ResultUtils.success(userService.deleteUser(id));
+        return ResultUtils.success(userService.delete(id));
     }
 }
 

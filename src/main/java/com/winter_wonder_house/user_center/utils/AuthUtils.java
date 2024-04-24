@@ -10,13 +10,17 @@ public class AuthUtils {
         return (UserDTO) request.getSession().getAttribute("user");
     }
 
-    public static boolean isRole(HttpServletRequest request) {
+    public static UserDTO isRole(HttpServletRequest request) {
         UserDTO userObj = isLogin(request);
 
         if (userObj == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN);
         }
 
-        return userObj.getRole() == 1;
+        if (userObj.getRole() != 1) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+
+        return userObj;
     }
 }

@@ -3,8 +3,10 @@ package com.winter_wonder_house.user_center.model.DTO;
 import com.winter_wonder_house.user_center.model.domain.User;
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
-public class UserDTO {
+public class UserDTO implements Serializable {
 
     private Long id;
 

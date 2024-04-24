@@ -9,7 +9,7 @@ public class UserSearchRequest {
 
     private String value;
 
-    private int page;
+    private int current;
 
     private int size;
 

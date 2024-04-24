@@ -14,11 +14,14 @@ import com.winter_wonder_house.user_center.model.request.UserSearchRequest;
 import com.winter_wonder_house.user_center.model.request.UserUpdateRequest;
 import com.winter_wonder_house.user_center.service.UserService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenruohan
@@ -26,12 +29,16 @@ import java.util.List;
  * @createDate 2024-04-01 15:36:43
  */
 @Service
+@Slf4j
 public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
         implements UserService {
 
     // Inject data operations.
     @Resource
     private UsersMapper usersMapper;
+
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 用户注册业务逻辑
@@ -55,6 +62,7 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
         // User is not register, save the user info
         User user = new User();
         user.setUsername(userRegisterRequest.getUsername());
+
         // User password encryption
         String entryPassword = DigestUtils.md5DigestAsHex(userRegisterRequest.getPassword().getBytes());
         user.setPassword(entryPassword);
@@ -68,6 +76,8 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
         // return safety user info
         UserDTO userDTO = new UserDTO();
         userDTO.getUserDTO(user);
+        log.info("register user: {}", user);
+
         return userDTO;
 
     }
@@ -81,13 +91,18 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
      */
     @Override
     public UserDTO login(UserLoginRequest userLoginRequest) {
+
         // User password encryption
         String encryptionPassword = DigestUtils.md5DigestAsHex(userLoginRequest.getPassword().getBytes());
+
         // Whether the user is registered or not.
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("username", userLoginRequest.getUsername());
         queryWrapper.eq("password", encryptionPassword);
+
+        // Get user info
         User user = getOne(queryWrapper);
+
         // User not registered, return the error
         if (user == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "username or password is wrong");
@@ -96,6 +111,7 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
         // The user verification passes, return safety user.
         UserDTO userDTO = new UserDTO();
         userDTO.getUserDTO(user);
+        log.info("user login success: {}", userDTO);
 
         return userDTO;
     }
@@ -123,6 +139,7 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
 
         // Update success, return user safety info.
         userInfo.getUserDTO(user);
+        log.info("update user: {}", user);
 
         return userInfo;
     }
@@ -135,16 +152,18 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
      * @author KingYen.
      */
     @Override
-    public List<UserDTO> getUserList(UserSearchRequest userSearchRequest) {
+    public List<UserDTO> getUserList(UserSearchRequest userSearchRequest, Long userID) {
         Page<User> userPage = getUserPage(userSearchRequest);
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        if (!userSearchRequest.getType().isEmpty() || !userSearchRequest.getValue().isEmpty()) {
-            // Search user info by Type and Value.
-            queryWrapper.like(userSearchRequest.getType(), userSearchRequest.getValue());
+        log.info("current: {} size: {}", userPage.getCurrent(), userPage.getSize());
+        String redisKey = String.format("user:center:list:%s:%s:%s", userID, userSearchRequest.getType(), userSearchRequest.getValue());
+        log.info("redisKey: {}", redisKey);
+        List<UserDTO> page = (List<UserDTO>) redisTemplate.opsForValue().get(redisKey);
+        if (page != null) {
+            log.info("get user list by redis: {}", page);
+            return page;
         }
-
+        QueryWrapper<User> queryWrapper = getQueryWrapper(userSearchRequest);;
         List<User> userList = usersMapper.selectPage(userPage, queryWrapper).getRecords();
-
         // return user safety user info.
         List<UserDTO> userDTOList = new ArrayList<>();
         for (User u : userList) {
@@ -153,11 +172,28 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
             userDTOList.add(userDTO);
         }
 
+        redisTemplate.opsForValue().set(redisKey, userDTOList, 1, TimeUnit.MINUTES);
+        log.info("get user list by mysql: {}", userDTOList);
+
         return userDTOList;
     }
 
+    private QueryWrapper<User> getQueryWrapper(UserSearchRequest userSearchRequest) {
+        if (userSearchRequest.getType() != null && userSearchRequest.getValue() != null) {
+            if (userSearchRequest.getType().isEmpty() || userSearchRequest.getValue().isEmpty()) {
+                return null;
+            }
+
+            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+            return queryWrapper.like(userSearchRequest.getType(), userSearchRequest.getValue());
+        }
+
+        return null;
+    }
+
     @Override
-    public boolean deleteUser(Long id) {
+    public boolean delete(Long id) {
+        log.info("delete user: {}", id);
         return removeById(id);
     }
 
@@ -169,15 +205,15 @@ public class UserServiceImpl extends ServiceImpl<UsersMapper, User>
      * @author KingYen.
      */
     private static Page<User> getUserPage(UserSearchRequest userSearchRequest) {
-        int page = userSearchRequest.getPage();
-        if (page < 1) {
-            page = 1;
+        int current = userSearchRequest.getCurrent();
+        if (current < 1) {
+            current = 1;
         }
         int size = userSearchRequest.getSize();
         if (size < 10) {
             size = 30;
         }
-        return new Page<>(page, size);
+        return new Page<>(current, size);
     }
 }
 

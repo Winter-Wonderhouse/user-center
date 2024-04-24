@@ -23,7 +23,8 @@ public interface UserService extends IService<User> {
 
     UserDTO update(UserUpdateRequest userDTO, UserDTO request);
 
-    List<UserDTO> getUserList(UserSearchRequest userSearchRequest);
+    boolean delete(Long id);
 
-    boolean deleteUser(Long id);
+    List<UserDTO> getUserList(UserSearchRequest userSearchRequest, Long userID);
+
 }
